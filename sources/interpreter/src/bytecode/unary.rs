@@ -4,7 +4,7 @@ use super::{Instruction, Progression};
 use crate::arg;
 use crate::pop;
 use crate::Context;
-use crate::Interpreter;
+
 use anyhow::Context as AnyhowContext;
 use parse::classfile::Resolvable;
 use parse::pool::ConstantClass;
@@ -20,6 +20,7 @@ use runtime::object::numeric::Integral;
 use runtime::object::numeric::IntegralType;
 
 use runtime::object::value::RuntimeValue;
+use runtime::vm::VM;
 use support::descriptor::FieldType;
 
 macro_rules! unop {
@@ -29,7 +30,7 @@ macro_rules! unop {
         pub struct $ins;
 
         impl Instruction for $ins {
-            fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+            fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
                 let val = arg!(ctx, "unary value" => $res_ty);
 
                 let result = $op(val);
@@ -45,7 +46,7 @@ macro_rules! unop {
         pub struct $ins;
 
         impl Instruction for $ins {
-            fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+            fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
                 let val = arg!(ctx, "unary value" => $res_ty);
 
                 let result: $res_ty = $op(val);
@@ -64,7 +65,7 @@ macro_rules! unop {
         }
 
         impl Instruction for $ins {
-            fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+            fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
                 let val = arg!(ctx, "unary value" => $res_ty);
 
                 let result: bool = $op(val);
@@ -228,7 +229,7 @@ pub struct IfNull {
 }
 
 impl Instruction for IfNull {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let val = pop!(ctx);
         let val = val.as_object().context("not an object")?;
 
@@ -246,7 +247,7 @@ pub struct IfNotNull {
 }
 
 impl Instruction for IfNotNull {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let val = pop!(ctx);
         let val = val.as_object().context("not an object")?;
 
@@ -264,7 +265,7 @@ pub struct InstanceOf {
 }
 
 impl Instruction for InstanceOf {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let val = pop!(ctx);
         let val = val.as_object().context("not an object")?;
 
@@ -307,7 +308,7 @@ pub struct CheckCast {
 }
 
 impl Instruction for CheckCast {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let _val = pop!(ctx);
         let val = _val.as_object().context("not an object")?;
 
@@ -340,8 +341,8 @@ impl Instruction for CheckCast {
 
         let val_class = &val.unwrap_ref().class;
         {
-            let from = val_class.unwrap_ref().name().clone();
-            let to = other_class_name.to_string();
+            let _from = val_class.unwrap_ref().name().clone();
+            let _to = other_class_name.to_string();
         }
 
         if Class::can_assign(val_class.clone(), other_class) {
@@ -365,7 +366,7 @@ pub struct Pop {
 }
 
 impl Instruction for Pop {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         for _ in 0..self.amount {
             pop!(ctx);
         }
@@ -381,7 +382,7 @@ pub struct Iinc {
 }
 
 impl Instruction for Iinc {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let local = ctx
             .locals
             .get_mut(self.index as usize)

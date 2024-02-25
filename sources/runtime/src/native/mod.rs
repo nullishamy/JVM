@@ -24,7 +24,7 @@ pub type NativeStaticFunction = Box<
         // args
         Vec<RuntimeValue>,
         // VM
-        &mut VM,
+        &VM,
     ) -> Result<Option<RuntimeValue>, Throwable>,
 >;
 
@@ -35,7 +35,7 @@ pub type NativeInstanceFunction = Box<
         // args
         Vec<RuntimeValue>,
         // VM
-        &mut VM,
+        &VM,
     ) -> Result<Option<RuntimeValue>, Throwable>,
 >;
 
@@ -58,11 +58,6 @@ pub trait NativeModule {
     // Weird signature for `method` because it cant use `impl TryInto<MethodDescriptor>` as this trait must be object safe.
     fn set_method(&mut self, method: (&'static str, &'static str), func: NativeFunction) {
         self.methods_mut().insert(method.try_into().unwrap(), func);
-    }
-
-    fn get_class(&self, vm: &mut VM) -> Result<RefTo<Class>, Throwable> {
-        vm.class_loader()
-            .for_name(format!("L{};", self.classname()).into())
     }
 }
 

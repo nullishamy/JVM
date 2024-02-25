@@ -11,6 +11,7 @@ use super::{
     layout::{full_layout, types, ClassFileLayout},
     mem::{JavaObject, RefTo},
 };
+use parking_lot::RwLock;
 use parse::{classfile::Resolvable, parser::Parser};
 use support::descriptor::FieldType;
 use tracing::debug;
@@ -21,7 +22,7 @@ pub fn base_layout() -> Layout {
 
 pub struct ClassLoader {
     class_path: Vec<PathBuf>,
-    classes: HashMap<FieldType, RefTo<Class>>,
+    classes: RwLock<HashMap<FieldType, RefTo<Class>>>,
     meta_class: RefTo<Class>,
 }
 
@@ -36,13 +37,13 @@ impl ClassLoader {
     pub fn new() -> Self {
         Self {
             class_path: vec![],
-            classes: HashMap::new(),
+            classes: RwLock::new(HashMap::new()),
             meta_class: RefTo::null(),
         }
     }
 
     pub fn for_bytes(
-        &mut self,
+        &self,
         field_type: FieldType,
         bytes: &[u8],
     ) -> Result<RefTo<Class>, Throwable> {
@@ -157,7 +158,10 @@ impl ClassLoader {
             layout.field_info.extend(super_layout.field_info);
 
             // FIXME: Make a better full/basic API so that we can move the statics out instead of having to clone them here
-            layout.statics.write().extend(super_layout.statics.read().clone());
+            layout
+                .statics
+                .write()
+                .extend(super_layout.statics.read().clone());
 
             // Assign our layout to the newly computed one
             layout.layout = our_new_layout;
@@ -176,13 +180,16 @@ impl ClassLoader {
 
         let object = RefTo::new(cls);
 
-        self.classes.insert(field_type, object.clone());
+        {
+            let mut classes = self.classes.write();
+            classes.insert(field_type, object.clone());
+        }
 
         Ok(object)
     }
 
-    pub fn for_name(&mut self, field_type: FieldType) -> Result<RefTo<Class>, Throwable> {
-        if let Some(object) = self.classes.get(&field_type) {
+    pub fn for_name(&self, field_type: FieldType) -> Result<RefTo<Class>, Throwable> {
+        if let Some(object) = self.classes.read().get(&field_type) {
             debug!("Fast path: {}", field_type.name());
             return Ok(object.clone());
         }
@@ -212,7 +219,10 @@ impl ClassLoader {
             cls.set_native_module(Box::new(RefCell::new(module)));
 
             let cls = RefTo::new(cls);
-            self.classes.insert(field_type, cls.clone());
+            {
+                let mut classes = self.classes.write();
+                classes.insert(field_type, cls.clone());
+            }
             return Ok(cls);
         }
 
@@ -246,7 +256,7 @@ impl ClassLoader {
         found_path
     }
 
-    pub fn classes(&self) -> &HashMap<FieldType, RefTo<Class>> {
+    pub fn classes(&self) -> &RwLock<HashMap<FieldType, RefTo<Class>>> {
         &self.classes
     }
 
@@ -302,10 +312,11 @@ impl ClassLoader {
 
         macro_rules! insert {
             ($tup: expr) => {
-                self.classes
-                    .insert($tup.0.unwrap_ref().name().clone().into(), $tup.0);
-                self.classes
-                    .insert($tup.1.unwrap_ref().name().clone().into(), $tup.1);
+                {
+                    let mut classes = self.classes.write();
+                    classes.insert($tup.0.unwrap_ref().name().clone().into(), $tup.0);
+                    classes.insert($tup.1.unwrap_ref().name().clone().into(), $tup.1);
+                }
             };
         }
 
@@ -321,11 +332,14 @@ impl ClassLoader {
         insert!(primitive!(FLOAT, "F"));
         insert!(primitive!(DOUBLE, "D"));
 
-        self.classes.iter_mut().for_each(|(_, value)| {
-            value.with_lock(|value| {
-                value.header_mut().class = self.meta_class.clone();
+        {
+            let mut classes = self.classes.write();
+            classes.iter_mut().for_each(|(_, value)| {
+                value.with_lock(|value| {
+                    value.header_mut().class = self.meta_class.clone();
+                });
             });
-        });
+        }
 
         Ok(BootstrappedClasses {
             java_lang_class: jlc,

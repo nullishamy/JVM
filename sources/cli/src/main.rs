@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use args::Cli;
 use clap::Parser;
 
-use interpreter::{Context, Interpreter};
+use interpreter::Interpreter;
 use parse::attributes::CodeAttribute;
 use runtime::{
     error::{Frame, Throwable, ThrownState},
@@ -21,7 +21,7 @@ use runtime::{
         mem::{FieldRef, RefTo},
         value::RuntimeValue,
     },
-    vm::VM,
+    vm::{VM, Executor, Context},
 };
 use runtime::{object::interner::intern_string, static_method};
 use support::{
@@ -129,7 +129,7 @@ fn test_init(cls: RefTo<Class>) {
     }
 }
 
-fn boot_system(vm: &mut Interpreter, cls: RefTo<Class>) {
+fn boot_system(vm: &VM, cls: RefTo<Class>) {
     info!("Booting system");
 
     let java_lang_system = vm
@@ -184,7 +184,7 @@ fn boot_system(vm: &mut Interpreter, cls: RefTo<Class>) {
     }
 }
 
-fn run_method(vm: &mut Interpreter, ctx: Context, args: &Cli) {
+fn run_method(vm: &VM, ctx: Context, args: &Cli) {
     let code = ctx.code.clone();
     let cls = ctx.class.clone();
 
@@ -295,11 +295,14 @@ fn main() {
         .and_then(|f| f.parse::<u64>().ok())
         .unwrap_or(128);
 
-    let mut vm = Interpreter::new(
-        VM::new(class_loader),
+    let mut vm = VM::new(class_loader);
+    let interpreter = Interpreter::new(
         interpreter::BootOptions { max_stack },
     );
 
+    interpreter.bootstrap(&vm).unwrap();
+
+    vm.set_executor(Box::new(interpreter));
     vm.bootstrap().unwrap();
 
     info!("Bootstrap complete");
@@ -324,7 +327,7 @@ fn main() {
                 .unwrap();
 
             if args.has_option(opts::test::BOOT) {
-                boot_system(&mut vm, cls.clone());
+                boot_system(&vm, cls.clone());
             }
 
             // Init the print natives for integration tests (we assert the stdio outputs for these)
@@ -360,7 +363,7 @@ fn main() {
                 method_name: "main".to_string(),
             });
 
-            run_method(&mut vm, ctx, &args);
+            run_method(&vm, ctx, &args);
         }));
 
         if res.is_err() {

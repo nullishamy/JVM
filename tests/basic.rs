@@ -1,6 +1,6 @@
 mod common;
 use proc::java;
-use common::{make_vm, load_test, attach_utils, execute_test, iassert_eq, dassert_eq, sassert_eq, assert_null, assert_not_null};
+use common::{make_vm, load_test, attach_utils, execute_test, iassert_eq, sassert_eq, assert_null, assert_not_null};
 
 #[test]
 fn reference_arrays() {
@@ -47,10 +47,10 @@ fn reference_arrays() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     iassert_eq(2, captures.next());
 
@@ -91,10 +91,10 @@ fn local_variables() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     sassert_eq("hello", captures.next());
     sassert_eq("world", captures.next());
@@ -125,10 +125,10 @@ fn static_functions() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     sassert_eq("hello world", captures.next());
     iassert_eq(1, captures.next());
@@ -167,10 +167,10 @@ fn multidimensional_arrays() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     iassert_eq(0, captures.next());
     iassert_eq(0, captures.next());
@@ -259,10 +259,10 @@ fn throwing_exceptions() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     sassert_eq("Caught", captures.next());
     sassert_eq("Caught", captures.next());
@@ -330,10 +330,10 @@ fn cast_values() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     sassert_eq("string", captures.next());
     sassert_eq("string", captures.next());
@@ -380,10 +380,10 @@ fn instance_of() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     sassert_eq("hit", captures.next());
 }
@@ -415,10 +415,10 @@ fn static_members() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     iassert_eq(32, captures.next());
 
@@ -430,19 +430,19 @@ fn static_members() {
 #[test]
 fn instance_members() {
     let compiled = java!(r#"
-        public class StaticMembers {
+        public class InstanceMembers {
             static native void capture(int i);
             static native void capture(Object o);
 
-            static int intMember = 32;
-            static Object objectMember;
+            int intMember = 32;
+            Object objectMember;
 
             void mutate() {
                 intMember = 12;
             }
 
             static void runTest() {
-                StaticMembers s = new StaticMembers();
+                InstanceMembers s = new InstanceMembers();
                 capture(s.intMember);
 
                 capture(s.objectMember);
@@ -455,10 +455,10 @@ fn instance_members() {
         }"#
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let mut captures = execute_test(&mut vm, cls, capture_id);
+    let mut captures = execute_test(&vm, cls, capture_id);
 
     iassert_eq(32, captures.next());
 

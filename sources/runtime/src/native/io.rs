@@ -42,7 +42,7 @@ impl NativeModule for IOFileDescriptor {
         fn init_ids(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -52,7 +52,7 @@ impl NativeModule for IOFileDescriptor {
         fn get_handle(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // Noop on Unix, would return handle on Windows.
             Ok(Some(RuntimeValue::Integral((-1_i64).into())))
@@ -63,7 +63,7 @@ impl NativeModule for IOFileDescriptor {
         fn get_append(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Figure this one out
             Ok(Some(RuntimeValue::Integral(FALSE)))
@@ -91,7 +91,7 @@ impl NativeModule for IOFileOutputStream {
         fn init_ids(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -101,7 +101,7 @@ impl NativeModule for IOFileOutputStream {
         fn write_bytes(
             this: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let fd = {
                 let field: FieldRef<RefTo<Object>> = this
@@ -177,7 +177,7 @@ impl NativeModule for IOUnixFileSystem {
         fn init_ids(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -230,7 +230,7 @@ impl NativeModule for IOFileInputStream {
         fn init_ids(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -240,7 +240,7 @@ impl NativeModule for IOFileInputStream {
         fn open0(
             this: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let fd_ref = get_fd(&this);
 
@@ -266,7 +266,7 @@ impl NativeModule for IOFileInputStream {
         fn length0(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let files = FILES.lock();
             let fd_ref = get_fd(&this);
@@ -282,7 +282,7 @@ impl NativeModule for IOFileInputStream {
         fn position0(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let mut files = FILES.lock();
             let fd_ref = get_fd(&this);
@@ -297,7 +297,7 @@ impl NativeModule for IOFileInputStream {
         fn read_bytes(
             this: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let mut files = FILES.lock();
             let fd_ref = get_fd(&this);
@@ -339,7 +339,7 @@ impl NativeModule for IOFileInputStream {
         fn read0(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let mut files = FILES.lock();
             let fd_ref = get_fd(&this);
@@ -360,7 +360,7 @@ impl NativeModule for IOFileInputStream {
         fn available0(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // Returns an estimate of the number of remaining bytes that can be read (or skipped over) from this input stream without blocking by the
             // next invocation of a method for this input stream.

@@ -1,12 +1,13 @@
 use std::fmt;
 
 use crate::Context;
-use crate::Interpreter;
+
 use bytes::{Buf, BytesMut};
 use runtime::error::Throwable;
 use runtime::internal;
 use runtime::object::layout::types;
 use runtime::object::value::RuntimeValue;
+use runtime::vm::VM;
 use support::bytes_ext::SafeBuf;
 
 use self::ops::WideFormat;
@@ -26,7 +27,7 @@ pub enum Progression {
 }
 
 pub trait Instruction: fmt::Debug {
-    fn handle(&self, _vm: &mut Interpreter, _ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, _ctx: &mut Context) -> Result<Progression, Throwable> {
         Ok(Progression::Next)
     }
 }
@@ -39,7 +40,7 @@ fn b<T>(v: T) -> Box<T> {
 
 #[inline(always)]
 pub fn decode_instruction(
-    vm: &mut Interpreter,
+    vm: &VM,
     bytes: &mut BytesMut,
     ctx: &Context,
 ) -> Result<Box<dyn Instruction>, Throwable> {

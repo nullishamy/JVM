@@ -40,7 +40,7 @@ impl NativeModule for JdkVM {
         fn initialize(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -67,7 +67,7 @@ impl NativeModule for JdkCDS {
         fn initialize_from_archive(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(Some(RuntimeValue::Integral(0_i64.into())))
         }
@@ -80,7 +80,7 @@ impl NativeModule for JdkCDS {
         fn get_random_seed_for_dumping(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(Some(RuntimeValue::Integral(0_i64.into())))
         }
@@ -93,7 +93,7 @@ impl NativeModule for JdkCDS {
         fn is_dumping_class_list0(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(Some(RuntimeValue::Integral(FALSE)))
         }
@@ -106,7 +106,7 @@ impl NativeModule for JdkCDS {
         fn is_dumping_archive0(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(Some(RuntimeValue::Integral(FALSE)))
         }
@@ -119,7 +119,7 @@ impl NativeModule for JdkCDS {
         fn is_sharing_enabled0(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(Some(RuntimeValue::Integral(FALSE)))
         }
@@ -149,9 +149,9 @@ impl NativeModule for JdkReflection {
         fn get_caller_class(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            vm: &mut VM,
+            vm: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
-            let mut frames = vm.frames().clone();
+            let mut frames = vm.frames();
             let current_frame = frames.pop().expect("no current frame");
             let current_class = current_frame.class_name;
 
@@ -255,7 +255,7 @@ impl NativeModule for JdkSystemPropsRaw {
         fn vm_properties(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            vm: &mut VM,
+            vm: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Populate these properly
 
@@ -284,7 +284,7 @@ impl NativeModule for JdkSystemPropsRaw {
         fn platform_properties(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            vm: &mut VM,
+            vm: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let mut arr = Vec::with_capacity(fields::FIXED_LENGTH);
             arr.resize(fields::FIXED_LENGTH, RefTo::null());
@@ -339,7 +339,7 @@ impl NativeModule for JdkUnsafe {
         fn object_field_offset1(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let cls = {
                 let val = args.get(1).unwrap();
@@ -373,7 +373,7 @@ impl NativeModule for JdkUnsafe {
         fn register_natives(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -383,7 +383,7 @@ impl NativeModule for JdkUnsafe {
         fn store_fence(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -461,7 +461,7 @@ impl NativeModule for JdkUnsafe {
         fn compare_and_set_int(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let (object, offset, expected, desired) =
                 check_cmp_args(&args, |v| v.as_integral().unwrap().value as types::Int);
@@ -479,7 +479,7 @@ impl NativeModule for JdkUnsafe {
         fn compare_and_set_reference(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let (object, offset, expected, desired) =
                 check_cmp_args(&args, |v| v.as_object().unwrap().clone());
@@ -500,7 +500,7 @@ impl NativeModule for JdkUnsafe {
         fn compare_and_set_long(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // Don't use the helpers, longs are finicky.
 
@@ -539,7 +539,7 @@ impl NativeModule for JdkUnsafe {
         fn get_reference_volatile(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let object = {
                 let val = args.get(1).unwrap();
@@ -568,7 +568,7 @@ impl NativeModule for JdkUnsafe {
         fn get_reference(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let object = {
                 let val = args.get(1).unwrap();
@@ -596,7 +596,7 @@ impl NativeModule for JdkUnsafe {
         fn get_int_volatile(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let object = {
                 let val = args.get(1).unwrap();
@@ -622,7 +622,7 @@ impl NativeModule for JdkUnsafe {
         fn put_reference_volatile(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let object = {
                 let val = args.get(1).unwrap();
@@ -658,7 +658,7 @@ impl NativeModule for JdkUnsafe {
         fn array_index_scale0(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             use crate::object::layout::types::*;
             let cls = args.get(1).unwrap();
@@ -695,7 +695,7 @@ impl NativeModule for JdkUnsafe {
         fn array_base_offset0(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             use crate::object::layout::types::*;
             let cls = args.get(1).unwrap();
@@ -749,7 +749,7 @@ impl NativeModule for JdkScopedMemoryAccess {
         fn register_natives(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -776,7 +776,7 @@ impl NativeModule for JdkSignal {
         fn handle0(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO:
             Ok(Some(RuntimeValue::Integral(0_i64.into())))
@@ -787,7 +787,7 @@ impl NativeModule for JdkSignal {
         fn find_signal0(
             _: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let sig = args.get(0).unwrap();
             let sig = sig.as_object().unwrap();
@@ -834,7 +834,7 @@ impl NativeModule for JdkBootLoader {
         fn set_boot_loader_unnamed_module0(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }

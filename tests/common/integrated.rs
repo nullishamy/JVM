@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use interpreter::{Context, Interpreter};
+use interpreter::Interpreter;
 use runtime::{
     error::{Frame, Throwable},
     native::{NativeFunction, NativeModule},
@@ -19,7 +19,7 @@ use runtime::{
         value::RuntimeValue,
     },
     static_method,
-    vm::VM,
+    vm::{VM, Context, Executor},
 };
 use support::{
     descriptor::{FieldType, ObjectType},
@@ -32,7 +32,7 @@ use super::CompiledClass;
 
 const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
-pub fn make_vm() -> Interpreter {
+pub fn make_vm() -> VM {
     let mut class_loader = ClassLoader::new();
 
     class_loader.add_path(format!("{SOURCE_DIR}/../std/java.base"));
@@ -47,18 +47,22 @@ pub fn make_vm() -> Interpreter {
     );
 
     set_interner(interner);
+    let mut vm = VM::new(
+        class_loader
+    );
 
-    let mut vm = Interpreter::new(
-        VM::new(class_loader),
+    let interpreter = Interpreter::new(
         interpreter::BootOptions { max_stack: 50 },
     );
 
-    vm.bootstrap().expect("vm bootstrap to succeed");
+    interpreter.bootstrap(&vm).expect("natives to load (interpreter bootstrap)");
+    vm.set_executor(Box::new(interpreter));
+    vm.bootstrap().expect("vm to bootstrap");
 
     vm
 }
 
-pub fn load_test<const N: usize>(vm: &mut VM, class: impl Into<CompiledClass<N>>) -> RefTo<Class> {
+pub fn load_test<const N: usize>(vm: &VM, class: impl Into<CompiledClass<N>>) -> RefTo<Class> {
     let class = class.into();
     vm.class_loader()
         .for_bytes(
@@ -121,7 +125,7 @@ impl NativeModule for TestCaptures {
 
         let capture = move |_: RefTo<Class>,
                             args: Vec<RuntimeValue>,
-                            _: &mut VM|
+                            _: &VM|
               -> Result<Option<RuntimeValue>, Throwable> {
             let mut states = CAPTURE_STATE
                 .lock()
@@ -171,7 +175,7 @@ pub fn attach_utils(class: RefTo<Class>) -> usize {
     id
 }
 
-pub fn execute_test(vm: &mut Interpreter, cls: RefTo<Class>, capture_id: usize) -> CapturedOutput {
+pub fn execute_test(vm: &VM, cls: RefTo<Class>, capture_id: usize) -> CapturedOutput {
     let main_ty: MethodDescriptor = ("runTest", "()V").try_into().unwrap();
     let ctx = Context::for_method(&main_ty, cls.clone());
 

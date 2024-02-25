@@ -15,10 +15,10 @@ fn simple_capture() {
         }"
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let captures = execute_test(&mut vm, cls, capture_id);
+    let captures = execute_test(&vm, cls, capture_id);
 
     iassert_eq(1, captures.get(0));
 }
@@ -37,10 +37,10 @@ fn many_capture() {
         }"
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let captures = execute_test(&mut vm, cls, capture_id);
+    let captures = execute_test(&vm, cls, capture_id);
 
     iassert_eq(1, captures.get(0));
     iassert_eq(2, captures.get(1));
@@ -61,10 +61,10 @@ fn capture_doubles() {
         }"
     );
 
-    let mut vm = make_vm();
-    let cls = load_test(&mut vm, compiled);
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
     let capture_id = attach_utils(cls.clone());
-    let captures = execute_test(&mut vm, cls, capture_id);
+    let captures = execute_test(&vm, cls, capture_id);
 
     dassert_eq(1.0, captures.get(0));
     dassert_eq(2.0, captures.get(1));

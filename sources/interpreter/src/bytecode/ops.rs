@@ -2,7 +2,7 @@ use super::{Instruction, Progression};
 use crate::arg;
 use crate::pop;
 use crate::Context;
-use crate::Interpreter;
+
 use anyhow::Context as AnyhowContext;
 use parse::{classfile::Resolvable, pool::ConstantEntry};
 use runtime::error::Throwable;
@@ -28,6 +28,7 @@ use runtime::object::mem::RefTo;
 use runtime::object::numeric::IntegralType;
 
 use runtime::object::value::RuntimeValue;
+use runtime::vm::VM;
 
 pub use super::binary::*;
 pub use super::invoke::*;
@@ -125,7 +126,7 @@ impl Instruction for Nop {}
 #[derive(Debug)]
 pub struct VoidReturn;
 impl Instruction for VoidReturn {
-    fn handle(&self, _vm: &mut Interpreter, _ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, _ctx: &mut Context) -> Result<Progression, Throwable> {
         Ok(Progression::Return(None))
     }
 }
@@ -134,7 +135,7 @@ impl Instruction for VoidReturn {
 pub struct ValueReturn;
 
 impl Instruction for ValueReturn {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let return_value = ctx.operands.pop().context("no return value popped")?;
 
         Ok(Progression::Return(Some(return_value)))
@@ -147,7 +148,7 @@ pub struct Goto {
 }
 
 impl Instruction for Goto {
-    fn handle(&self, _vm: &mut Interpreter, _ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, _ctx: &mut Context) -> Result<Progression, Throwable> {
         Ok(Progression::JumpRel(self.jump_to as i32))
     }
 }
@@ -156,7 +157,7 @@ impl Instruction for Goto {
 pub struct ArrayLength;
 
 impl Instruction for ArrayLength {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The arrayref must be of type reference and must refer to an array. It is popped from the operand stack.
         let array = arg!(ctx, "array" => Array<()>);
 
@@ -175,7 +176,7 @@ pub struct ANewArray {
 }
 
 impl Instruction for ANewArray {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The count must be of type int. It is popped off the operand stack.
         let count = arg!(ctx, "count" => i32);
 
@@ -228,7 +229,7 @@ pub struct NewArray {
 }
 
 impl Instruction for NewArray {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The count must be of type int. It is popped off the operand stack.
         let count = arg!(ctx, "count" => i32);
 
@@ -309,7 +310,7 @@ pub struct ArrayStore {
 }
 
 impl Instruction for ArrayStore {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let value = pop!(ctx);
         let index = arg!(ctx, "index" => i32);
 
@@ -385,7 +386,7 @@ pub struct ArrayLoad {
 }
 
 impl Instruction for ArrayLoad {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let index = arg!(ctx, "index" => i32);
         let ty = self.ty.unwrap_ref();
 
@@ -475,7 +476,7 @@ impl Instruction for ArrayLoad {
 pub struct MonitorEnter;
 impl Instruction for MonitorEnter {
     // TODO: Support when we support MT
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         pop!(ctx);
         Ok(Progression::Next)
     }
@@ -485,7 +486,7 @@ impl Instruction for MonitorEnter {
 pub struct MonitorExit;
 impl Instruction for MonitorExit {
     // TODO: Support when we support MT
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         pop!(ctx);
         Ok(Progression::Next)
     }
@@ -504,7 +505,7 @@ pub struct Wide {
 }
 
 impl Instruction for Wide {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         match self.format {
             WideFormat::Format2 { index, const_val } => {
                 let local = ctx

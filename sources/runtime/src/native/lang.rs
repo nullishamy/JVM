@@ -40,7 +40,7 @@ impl NativeModule for LangClass {
         fn get_primitive_class(
             _: RefTo<Object>,
             args: Vec<RuntimeValue>,
-            vm: &mut VM,
+            vm: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let prim_name = args.get(0).cloned().expect("no prim name");
             let prim_name = prim_name
@@ -80,7 +80,7 @@ impl NativeModule for LangClass {
         fn register_natives(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -90,7 +90,7 @@ impl NativeModule for LangClass {
         fn desired_assertion_status0(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(Some(RuntimeValue::Integral(TRUE)))
         }
@@ -103,7 +103,7 @@ impl NativeModule for LangClass {
         fn is_array(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let class = unsafe { this.cast::<Class>() };
             let result = if class.unwrap_ref().is_array() {
@@ -120,7 +120,7 @@ impl NativeModule for LangClass {
         fn is_interface(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let class = unsafe { this.cast::<Class>() };
             let result = if class.unwrap_ref().is_interface() {
@@ -137,7 +137,7 @@ impl NativeModule for LangClass {
         fn is_primitive(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let class = unsafe { this.cast::<Class>() };
             let result = if class.unwrap_ref().is_primitive() {
@@ -154,7 +154,7 @@ impl NativeModule for LangClass {
         fn init_class_name(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let class = unsafe { this.cast::<Class>() };
 
@@ -190,7 +190,7 @@ impl NativeModule for LangSystem {
         fn register_natives(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -200,7 +200,7 @@ impl NativeModule for LangSystem {
         fn nano_time(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let duration_since_epoch = SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -215,7 +215,7 @@ impl NativeModule for LangSystem {
         fn identity_hash_code(
             _: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let obj = args.get(0).unwrap();
             let hash = obj.hash_code();
@@ -231,7 +231,7 @@ impl NativeModule for LangSystem {
         fn set_in0(
             cls: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let stream = args.get(0).unwrap();
             let stream = stream.as_object().unwrap();
@@ -253,7 +253,7 @@ impl NativeModule for LangSystem {
         fn set_out0(
             cls: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let stream = args.get(0).unwrap();
             let stream = stream.as_object().unwrap();
@@ -275,7 +275,7 @@ impl NativeModule for LangSystem {
         fn set_err0(
             cls: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let stream = args.get(0).unwrap();
             let stream = stream.as_object().unwrap();
@@ -297,7 +297,7 @@ impl NativeModule for LangSystem {
         fn arraycopy(
             _: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            vm: &mut VM,
+            vm: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             use crate::object::layout::types::*;
 
@@ -492,7 +492,7 @@ impl NativeModule for LangShutdown {
         fn before_halt(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -502,7 +502,7 @@ impl NativeModule for LangShutdown {
         fn halt0(
             _: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let exit_code = args
                 .get(0)
@@ -534,7 +534,7 @@ impl NativeModule for LangObject {
         fn notify_all(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -544,7 +544,7 @@ impl NativeModule for LangObject {
         fn clone(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Probably not the right semantics lmao
             Ok(Some(RuntimeValue::Object(this.clone())))
@@ -555,7 +555,7 @@ impl NativeModule for LangObject {
         fn hash_code(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let rtv = RuntimeValue::Object(this);
             let hash: i32 = rtv.hash_code();
@@ -568,7 +568,7 @@ impl NativeModule for LangObject {
         fn get_class(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(Some(RuntimeValue::Object(
                 this.unwrap_ref().class().erase(),
@@ -600,7 +600,7 @@ impl NativeModule for LangStringUtf16 {
         fn is_big_endian(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // We always encode in BE, for portability
             Ok(Some(RuntimeValue::Integral(TRUE)))
@@ -628,7 +628,7 @@ impl NativeModule for LangString {
         fn intern(
             this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let str = unsafe { this.cast::<BuiltinString>() };
             let str = str.unwrap_ref().string()?;
@@ -659,7 +659,7 @@ impl NativeModule for LangRuntime {
         fn available_processors(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Support MT and report this accurately
             Ok(Some(RuntimeValue::Integral(1_i32.into())))
@@ -673,7 +673,7 @@ impl NativeModule for LangRuntime {
         fn max_memory(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Read this properly
             Ok(Some(RuntimeValue::Integral(1024_i64.into())))
@@ -684,7 +684,7 @@ impl NativeModule for LangRuntime {
         fn gc(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // Our impl does not gc!
             Ok(None)
@@ -712,7 +712,7 @@ impl NativeModule for LangStackTraceElement {
         fn init_stack_trace_elements(
             cls: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let (elements, throwable) = (
                 unsafe {
@@ -808,7 +808,7 @@ impl NativeModule for LangThrowable {
 
     fn init(&mut self) {
 
-        fn build_frames(vm: &mut VM) -> Vec<RefTo<StackTraceElement>> {
+        fn build_frames(vm: &VM) -> Vec<RefTo<StackTraceElement>> {
             let stack_trace_element_ty = vm
                 .class_loader()
                 .for_name("Ljava/lang/StackTraceElement;".try_into().unwrap())
@@ -839,7 +839,7 @@ impl NativeModule for LangThrowable {
         fn fill_in_stack_trace(
             _this: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            vm: &mut VM,
+            vm: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let this = _this.unwrap_ref();
 
@@ -889,7 +889,7 @@ impl NativeModule for LangFloat {
         fn float_to_raw_int_bits(
             _: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let float = args.get(0).ok_or(internal!("no arg 0"))?;
             let float = float.as_floating().ok_or(internal!("not a float"))?;
@@ -923,7 +923,7 @@ impl NativeModule for LangDouble {
         fn double_to_raw_long_bits(
             _: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let float = args.get(0).ok_or(internal!("no arg 0"))?;
             let float = float.as_floating().ok_or(internal!("not a float"))?;
@@ -940,7 +940,7 @@ impl NativeModule for LangDouble {
         fn long_bits_to_double(
             _: RefTo<Class>,
             args: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             let long = args.get(0).ok_or(internal!("no arg 0"))?;
             let long = long.as_integral().ok_or(internal!("not an int"))?;
@@ -974,7 +974,7 @@ impl NativeModule for LangThread {
         fn register_natives(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }
@@ -984,7 +984,7 @@ impl NativeModule for LangThread {
         fn is_alive(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Would check in a real thread.
             Ok(Some(RuntimeValue::Integral(FALSE)))
@@ -995,7 +995,7 @@ impl NativeModule for LangThread {
         fn start0(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Start a thread here
             Ok(None)
@@ -1006,7 +1006,7 @@ impl NativeModule for LangThread {
         fn set_priority0(
             _: RefTo<Object>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Would set the actual priority on a thread
             Ok(None)
@@ -1017,7 +1017,7 @@ impl NativeModule for LangThread {
         fn current_thread(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            vm: &mut VM,
+            vm: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // TODO: Actually read the thread object when we have threading
             Ok(Some(RuntimeValue::Object(vm.main_thread())))
@@ -1048,7 +1048,7 @@ impl NativeModule for LangClassLoader {
         fn register_natives(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             Ok(None)
         }

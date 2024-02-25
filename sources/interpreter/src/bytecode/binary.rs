@@ -6,9 +6,9 @@ use super::{Instruction, Progression};
 use crate::arg;
 use crate::pop;
 use crate::Context;
-use crate::Interpreter;
 use anyhow::Context as AnyhowContext;
 use runtime::error::Throwable;
+use runtime::vm::VM;
 
 use runtime::object::numeric::Floating;
 use runtime::object::numeric::FloatingType;
@@ -23,7 +23,7 @@ macro_rules! binop {
         pub struct $ins;
 
         impl Instruction for $ins {
-            fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+            fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
                 let rhs = arg!(ctx, "rhs" => $rhs);
                 let lhs = arg!(ctx, "lhs" => $lhs);
 
@@ -42,7 +42,7 @@ macro_rules! binop {
         }
 
         impl Instruction for $ins {
-            fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+            fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
                 let rhs = arg!(ctx, "rhs" => $res_ty);
                 let lhs = arg!(ctx, "lhs" => $res_ty);
 
@@ -377,7 +377,7 @@ pub struct IfRefEq {
 }
 
 impl Instruction for IfRefEq {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let rhs = pop!(ctx);
         let lhs = pop!(ctx);
 
@@ -396,7 +396,7 @@ pub struct IfRefNe {
 }
 
 impl Instruction for IfRefNe {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let rhs = pop!(ctx);
         let lhs = pop!(ctx);
 

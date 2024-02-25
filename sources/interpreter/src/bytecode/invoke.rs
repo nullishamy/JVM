@@ -4,7 +4,7 @@ use super::{Instruction, Progression};
 use crate::arg;
 use crate::pop;
 use crate::Context;
-use crate::Interpreter;
+
 use anyhow::Context as AnyhowContext;
 use runtime::error::Frame;
 use runtime::error::RuntimeException;
@@ -38,6 +38,7 @@ use parse::{
     flags::{FieldAccessFlag, MethodAccessFlag},
     pool::ConstantEntry,
 };
+use runtime::vm::VM;
 use support::types::MethodDescriptor;
 use support::{
     descriptor::{BaseType, FieldType, MethodType},
@@ -52,7 +53,7 @@ pub struct InvokeDynamic {
 }
 
 impl Instruction for InvokeDynamic {
-    fn handle(&self, vm: &mut Interpreter, _ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, _ctx: &mut Context) -> Result<Progression, Throwable> {
         Err(internal!("cannot use invokedynamic!: {:#?}", vm.frames()))
     }
 }
@@ -63,7 +64,7 @@ pub struct InvokeVirtual {
 }
 
 impl Instruction for InvokeVirtual {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let cls = ctx.class.clone();
         let cls = cls
             .to_ref()
@@ -153,7 +154,7 @@ pub struct InvokeSpecial {
 }
 
 impl Instruction for InvokeSpecial {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let cls =
             ctx.class
                 .to_ref()
@@ -225,7 +226,7 @@ pub struct InvokeStatic {
 }
 
 impl Instruction for InvokeStatic {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let cls =
             ctx.class
                 .to_ref()
@@ -313,7 +314,7 @@ pub struct InvokeInterface {
 }
 
 impl Instruction for InvokeInterface {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The value of the fourth operand byte must always be zero.
         if self.zero != 0 {
             return Err(internal!("zero was not zero"));
@@ -394,7 +395,7 @@ impl Instruction for InvokeInterface {
 }
 
 fn resolve_class_method(
-    vm: &mut Interpreter,
+    vm: &VM,
     class: RefTo<Class>,
     method_ty: &MethodDescriptor,
 ) -> Result<Method, Throwable> {
@@ -463,7 +464,7 @@ fn resolve_class_method(
 }
 
 fn resolve_interface_method(
-    vm: &mut Interpreter,
+    vm: &VM,
     class: RefTo<Class>,
     method_ty: &MethodDescriptor,
 ) -> Result<Method, Throwable> {
@@ -524,7 +525,7 @@ fn resolve_interface_method(
 }
 
 fn select_special_method(
-    vm: &mut Interpreter,
+    vm: &VM,
     class: RefTo<Class>,
     declared_class: RefTo<Class>,
     method: Method,
@@ -584,7 +585,7 @@ fn select_special_method(
 }
 
 fn select_method(
-    vm: &mut Interpreter,
+    vm: &VM,
     class: RefTo<Class>,
     declared_class: RefTo<Class>,
     method: Method,
@@ -697,7 +698,7 @@ pub struct New {
 }
 
 impl Instruction for New {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The run-time constant pool entry at the index must be a symbolic
         // reference to a class or interface type. The named class or interface
         // type is resolved (§5.4.3.1) and should result in a class type.
@@ -871,7 +872,7 @@ fn clone_args_from_operands(
     Ok(args)
 }
 
-fn do_java_call(vm: &mut Interpreter, ctx: Context) -> Result<Option<RuntimeValue>, Throwable> {
+fn do_java_call(vm: &VM, ctx: Context) -> Result<Option<RuntimeValue>, Throwable> {
     // The new frame is then made current, and the Java Virtual Machine pc is set
     // to the opcode of the first instruction of the method to be invoked.
     // Execution continues with the first instruction of the method.
@@ -915,7 +916,7 @@ fn do_java_call(vm: &mut Interpreter, ctx: Context) -> Result<Option<RuntimeValu
 }
 
 fn do_call(
-    vm: &mut Interpreter,
+    vm: &VM,
     method: Method,
     class: RefTo<Class>,
     args: Vec<RuntimeValue>,
@@ -982,7 +983,7 @@ fn do_call(
 pub struct Athrow;
 
 impl Instruction for Athrow {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let _throwable = pop!(ctx);
         let throwable = _throwable
             .as_object()
@@ -1022,7 +1023,7 @@ impl Instruction for Athrow {
             message: format!("{}: {}", class_name, message),
             ty: class,
             obj: _throwable,
-            sources: vm.frames().clone(),
+            sources: vm.frames(),
         })))
     }
 }
@@ -1036,7 +1037,7 @@ pub struct TableSwitch {
 }
 
 impl Instruction for TableSwitch {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The index must be of type int and is popped from the operand stack.
         let index = arg!(ctx, "index" => i32);
         let index = index.value as i32;
@@ -1070,7 +1071,7 @@ pub struct LookupSwitch {
 }
 
 impl Instruction for LookupSwitch {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The key must be of type int and is popped from the operand stack.
         let key = arg!(ctx, "key" => i32);
         let key = key.value as i32;

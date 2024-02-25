@@ -62,7 +62,7 @@ pub struct ThrownState {
 impl Throwable {
     pub fn caught_by<'a>(
         &'a self,
-        vm: &mut VM,
+        vm: &VM,
         method: &'a CodeAttribute,
         state: &'a ThrownState,
     ) -> Result<Option<&'a ExceptionEntry>, Throwable> {

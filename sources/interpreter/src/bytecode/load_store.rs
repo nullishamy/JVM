@@ -2,7 +2,7 @@ use super::{Instruction, Progression};
 use crate::arg;
 use crate::pop;
 use crate::Context;
-use crate::Interpreter;
+
 use anyhow::Context as AnyhowContext;
 use parse::pool::ConstantClass;
 use parse::{
@@ -12,7 +12,7 @@ use parse::{
 use runtime::error::Throwable;
 use runtime::internal;
 use runtime::object::builtins::Array;
-use runtime::object::builtins::Class;
+
 use runtime::object::builtins::Object;
 use runtime::object::interner::intern_string;
 use runtime::object::layout::types::Bool;
@@ -24,12 +24,13 @@ use runtime::object::layout::types::Int;
 use runtime::object::layout::types::Long;
 use runtime::object::layout::types::Short;
 use runtime::object::mem::FieldRef;
-use runtime::object::mem::JavaObject;
+
 use runtime::object::mem::RefTo;
-use runtime::object::numeric::Integral;
+
 use runtime::object::numeric::IntegralType;
 use runtime::object::value::ComputationalType;
 use runtime::object::value::RuntimeValue;
+use runtime::vm::VM;
 use support::descriptor::ArrayType;
 use support::descriptor::{BaseType, FieldType};
 use support::types::FieldDescriptor;
@@ -40,7 +41,7 @@ pub struct PushConst {
 }
 
 impl Instruction for PushConst {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         ctx.operands.push(self.value.clone());
         Ok(Progression::Next)
     }
@@ -52,7 +53,7 @@ pub struct Ldc2W {
 }
 
 impl Instruction for Ldc2W {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let value = ctx
             .class
             .unwrap_ref()
@@ -83,7 +84,7 @@ pub struct Ldc {
 }
 
 impl Instruction for Ldc {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let value = ctx
             .class
             .unwrap_ref()
@@ -129,7 +130,7 @@ pub struct LoadLocal {
 }
 
 impl Instruction for LoadLocal {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let local = ctx
             .locals
             .get(self.index)
@@ -147,7 +148,7 @@ pub struct StoreLocal {
 }
 
 impl Instruction for StoreLocal {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let locals = &mut ctx.locals;
         let target_index = if self.store_next {
             self.index + 1
@@ -175,7 +176,7 @@ pub struct GetField {
 }
 
 impl Instruction for GetField {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The run-time constant pool entry at the index must be a symbolic
         // reference to a field (§5.1), which gives the name and descriptor of
         // the field as well as a symbolic reference to the class in which the
@@ -275,7 +276,7 @@ pub struct PutField {
 }
 
 impl Instruction for PutField {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The run-time constant pool entry at the index must be a symbolic
         // reference to a field (§5.1), which gives the name and descriptor of
         // the field as well as a symbolic reference to the class in which the
@@ -363,7 +364,7 @@ pub struct GetStatic {
 }
 
 impl Instruction for GetStatic {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The run-time constant pool entry at the index must be a symbolic
         // reference to a field (§5.1), which gives the name and descriptor of
         // the field as well as a symbolic reference to the class in which the
@@ -437,7 +438,7 @@ pub struct PutStatic {
 }
 
 impl Instruction for PutStatic {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         // The run-time constant pool entry at the index must be a symbolic
         // reference to a field (§5.1), which gives the name and descriptor of
         // the field as well as a symbolic reference to the class in which the
@@ -480,7 +481,7 @@ impl Instruction for PutStatic {
 pub struct Dup;
 
 impl Instruction for Dup {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let value = pop!(ctx);
         ctx.operands.push(value.clone());
         ctx.operands.push(value);
@@ -492,7 +493,7 @@ impl Instruction for Dup {
 pub struct DupX1;
 
 impl Instruction for DupX1 {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let value1 = pop!(ctx);
         let value2 = pop!(ctx);
 
@@ -507,7 +508,7 @@ impl Instruction for DupX1 {
 pub struct DupX2;
 
 impl Instruction for DupX2 {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let value = pop!(ctx);
 
         match value.computational_type() {
@@ -549,7 +550,7 @@ impl Instruction for DupX2 {
 pub struct Dup2;
 
 impl Instruction for Dup2 {
-    fn handle(&self, _vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, _vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let value = pop!(ctx);
 
         match value.computational_type() {
@@ -589,7 +590,7 @@ pub struct MultiANewArray {
 }
 
 impl Instruction for MultiANewArray {
-    fn handle(&self, vm: &mut Interpreter, ctx: &mut Context) -> Result<Progression, Throwable> {
+    fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
         let mut counts = vec![];
 
         for _ in 0..self.dimensions {
@@ -615,7 +616,7 @@ impl Instruction for MultiANewArray {
 
         fn make_layers(
             ty: ArrayType,
-            vm: &mut Interpreter,
+            vm: &VM,
             mut counts: &mut [i64],
         ) -> RefTo<Object> {
             let len = counts.len();

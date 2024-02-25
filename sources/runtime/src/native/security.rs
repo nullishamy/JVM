@@ -29,7 +29,7 @@ impl NativeModule for SecurityAccessController {
         fn get_stack_access_control_context(
             _: RefTo<Class>,
             _: Vec<RuntimeValue>,
-            _: &mut VM,
+            _: &VM,
         ) -> Result<Option<RuntimeValue>, Throwable> {
             // Null defined in the docs as "privileged code".
             Ok(Some(RuntimeValue::null_ref()))
