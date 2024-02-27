@@ -191,6 +191,7 @@ impl ClassLoader {
     pub fn for_name(&self, field_type: FieldType) -> Result<RefTo<Class>, Throwable> {
         if let Some(object) = self.classes.read().get(&field_type) {
             debug!("Fast path: {}", field_type.name());
+            assert!(object.is_not_null());
             return Ok(object.clone());
         }
 

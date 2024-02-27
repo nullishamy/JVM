@@ -29,3 +29,7 @@ path = "program.rs"
 [[test]]
 name = "bugs"
 path = "bugs.rs"
+
+[[test]]
+name = "errors"
+path = "errors.rs"

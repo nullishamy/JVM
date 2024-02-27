@@ -1,6 +1,7 @@
-use std::cell::{OnceCell, RefCell};
+use std::{cell::{OnceCell, RefCell}, sync::atomic::AtomicU64};
 
 
+use parking_lot::RwLock;
 use parse::attributes::CodeAttribute;
 use support::types::MethodDescriptor;
 use tracing::debug;
@@ -15,6 +16,7 @@ use crate::{
     },
 };
 
+#[derive(Debug)]
 pub struct Context {
     pub code: CodeAttribute,
     pub class: RefTo<Class>,
@@ -112,10 +114,28 @@ impl VM {
             .class_loader
             .for_name(format!("L{};", ty.class_name()).into())?;
 
+        let layout = cls.unwrap_ref().instance_layout();
+        let super_class = cls.unwrap_ref().super_class();
+        
+        let object = unsafe {
+            let ptr = layout.alloc();
+            (*ptr).class = cls.clone();
+            (*ptr).super_class = super_class;
+            (*ptr).ref_count = AtomicU64::new(0);
+            (*ptr).lock = RwLock::new(());
+            RefTo::from_ptr(ptr)
+        };
+
+        let constructor: MethodDescriptor = ("<init>", "(Ljava/lang/String;)V").try_into().unwrap();
+        let mut ctx = Context::for_method(&constructor, cls.clone());
+        ctx.locals = vec![RuntimeValue::Object(object.clone()), RuntimeValue::Object(intern_string(ty.message()).unwrap().erase())];
+
+        self.run(ctx).map_err(|e| e.0)?;
+
         Ok(Throwable::Runtime(error::RuntimeException {
             message: ty.message(),
             ty: cls,
-            obj: RuntimeValue::null_ref(),
+            obj: RuntimeValue::Object(object),
             sources: self.frames.borrow().clone(),
         }))
     }

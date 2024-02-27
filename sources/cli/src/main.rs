@@ -21,7 +21,7 @@ use runtime::{
         mem::{FieldRef, RefTo},
         value::RuntimeValue,
     },
-    vm::{VM, Executor, Context},
+    vm::{VM, Context},
 };
 use runtime::{object::interner::intern_string, static_method};
 use support::{

@@ -65,13 +65,7 @@ pub struct InvokeVirtual {
 
 impl Instruction for InvokeVirtual {
     fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
-        let cls = ctx.class.clone();
-        let cls = cls
-            .to_ref()
-            .ok_or(vm.try_make_error(VMError::NullPointerException {
-                ctx: "invokevirtual".to_string(),
-            })?)?;
-
+        let cls = ctx.class.unwrap_ref();
         let pool = &cls.class_file().constant_pool;
 
         // The unsigned indExbyte1 and indexbyte2 are used to construct an
@@ -120,9 +114,12 @@ impl Instruction for InvokeVirtual {
         // to C and the resolved method (§5.4.6). This is the method to be invoked.
         let objectclass = objectref
             .to_ref()
-            .ok_or(vm.try_make_error(VMError::NullPointerException {
-                ctx: format!("cannot invoke method '{}' on null", &method_ty.name()),
-            })?)?
+            .ok_or_else(|| {
+                vm.try_make_error(VMError::NullPointerException {
+                    ctx: format!("cannot invoke method '{}' on null", &method_ty.name()),
+                })
+                .unwrap()
+            })?
             .header()
             .class
             .clone();
@@ -155,13 +152,7 @@ pub struct InvokeSpecial {
 
 impl Instruction for InvokeSpecial {
     fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
-        let cls =
-            ctx.class
-                .to_ref()
-                .ok_or(vm.try_make_error(VMError::NullPointerException {
-                    ctx: "invokespecial".to_string(),
-                })?)?;
-
+        let cls = ctx.class.unwrap_ref();
         let pool = &cls.class_file().constant_pool;
 
         // The unsigned indexbyte1 and indexbyte2 are used to construct an
@@ -198,6 +189,11 @@ impl Instruction for InvokeSpecial {
         let mut args_for_call = clone_args_from_operands(method_ty.descriptor(), ctx)?;
 
         let objectref = arg!(ctx, "objectref" => Object);
+        if objectref.is_null() {
+            return Err(vm.try_make_error(VMError::NullPointerException {
+                ctx: "cannot invokespecial on null".to_string(),
+            })?);
+        }
 
         let (selected_class, selected_method) =
             select_special_method(vm, loaded_class.clone(), loaded_class, loaded_method)?
@@ -227,12 +223,7 @@ pub struct InvokeStatic {
 
 impl Instruction for InvokeStatic {
     fn handle(&self, vm: &VM, ctx: &mut Context) -> Result<Progression, Throwable> {
-        let cls =
-            ctx.class
-                .to_ref()
-                .ok_or(vm.try_make_error(VMError::NullPointerException {
-                    ctx: "invokestatic".to_string(),
-                })?)?;
+        let cls = ctx.class.unwrap_ref();
         let pool = &cls.class_file().constant_pool;
 
         // The unsigned indexbyte1 and indexbyte2 are used to construct an

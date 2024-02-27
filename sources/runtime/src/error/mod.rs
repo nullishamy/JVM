@@ -11,6 +11,7 @@ use crate::{
     vm::VM,
 };
 
+#[derive(Debug)]
 pub enum VMError {
     ArrayIndexOutOfBounds { at: i64 },
     NullPointerException { ctx: String },
