@@ -30,6 +30,8 @@ use support::{
 };
 use tracing::{error, info, Level};
 use tracing_subscriber::fmt;
+use std::fs;
+use support::jar::JarFile;
 
 use crate::args::opts;
 
@@ -272,8 +274,14 @@ fn main() {
 
     let mut class_loader = ClassLoader::new();
 
+
     if let Some(std) = &args.std {
-        class_loader.add_path(std);
+        let stdjar = {
+            let bytes = fs::read(std).unwrap();
+            JarFile::from_bytes(bytes).unwrap()
+        };
+
+        class_loader.add_jar(stdjar);
     }
 
     for cp in &args.classpath {

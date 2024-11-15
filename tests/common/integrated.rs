@@ -1,4 +1,5 @@
 use std::{
+    fs,
     cell::RefCell,
     collections::HashMap,
     sync::{
@@ -24,6 +25,7 @@ use runtime::{
 use support::{
     descriptor::{FieldType, ObjectType},
     types::MethodDescriptor,
+    jar::JarFile
 };
 use tracing::Level;
 use tracing_subscriber::fmt;
@@ -34,8 +36,15 @@ const SOURCE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 pub fn make_vm() -> VM {
     let mut class_loader = ClassLoader::new();
+    let stdjar = {
+        let path = format!("{SOURCE_DIR}/../std.jar");
+        let bytes = fs::read(path).unwrap();
 
-    class_loader.add_path(format!("{SOURCE_DIR}/../std/java.base"));
+        JarFile::from_bytes(bytes).unwrap()
+    };
+
+    class_loader.add_jar(stdjar);
+
     let bootstrapped_classes = class_loader
         .bootstrap()
         .expect("classloader bootstrap to succeed");

@@ -10,4 +10,5 @@ anyhow = { workspace = true }
 bytes = { workspace = true }
 paste = { workspace = true }
 enum-as-inner = { workspace = true }
+zip = "2.2.0"
 

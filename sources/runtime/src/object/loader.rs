@@ -14,6 +14,7 @@ use super::{
 use parking_lot::RwLock;
 use parse::{classfile::Resolvable, parser::Parser};
 use support::descriptor::FieldType;
+use support::jar::JarFile;
 use tracing::debug;
 
 pub fn base_layout() -> Layout {
@@ -22,6 +23,7 @@ pub fn base_layout() -> Layout {
 
 pub struct ClassLoader {
     class_path: Vec<PathBuf>,
+    jars: Vec<JarFile>,
     classes: RwLock<HashMap<FieldType, RefTo<Class>>>,
     meta_class: RefTo<Class>,
 }
@@ -38,6 +40,7 @@ impl ClassLoader {
         Self {
             class_path: vec![],
             classes: RwLock::new(HashMap::new()),
+            jars: vec![],
             meta_class: RefTo::null(),
         }
     }
@@ -230,6 +233,17 @@ impl ClassLoader {
         let formatted_name = format!("{}.class", field_type.name());
         debug!("Slow path: {}", &formatted_name);
 
+        let from_jars = self
+            .jars
+            .iter()
+            .map(|jar| jar.locate_class(&formatted_name))
+            .find(|jar| jar.is_ok());
+
+        if let Some(file) = from_jars {
+            let file = file.unwrap();
+            return self.for_bytes(field_type, &file);
+        }
+
         let found_path = self.resolve_name(formatted_name.clone());
         if let Some(path) = found_path {
             let bytes = fs::read(path).map_err(internalise!())?;
@@ -263,6 +277,11 @@ impl ClassLoader {
 
     pub fn add_path(&mut self, path: impl Into<PathBuf>) -> &mut Self {
         self.class_path.push(path.into());
+        self
+    }
+
+    pub fn add_jar(&mut self, jar: JarFile) -> &mut Self {
+        self.jars.push(jar);
         self
     }
 
@@ -312,13 +331,11 @@ impl ClassLoader {
         }
 
         macro_rules! insert {
-            ($tup: expr) => {
-                {
-                    let mut classes = self.classes.write();
-                    classes.insert($tup.0.unwrap_ref().name().clone().into(), $tup.0);
-                    classes.insert($tup.1.unwrap_ref().name().clone().into(), $tup.1);
-                }
-            };
+            ($tup: expr) => {{
+                let mut classes = self.classes.write();
+                classes.insert($tup.0.unwrap_ref().name().clone().into(), $tup.0);
+                classes.insert($tup.1.unwrap_ref().name().clone().into(), $tup.1);
+            }};
         }
 
         // Primitives

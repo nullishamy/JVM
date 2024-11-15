@@ -52,7 +52,7 @@ pub fn exec_integration<const N: usize>(state: IntegrationInput, class: impl Int
         .arg("--cp")
         .arg(TMP_DIR)
         .arg("--std")
-        .arg(format!("{SOURCE_DIR}/../std/java.base"))
+        .arg(format!("{SOURCE_DIR}/../std.jar"))
         .arg("-Xtest.init=true")
         .arg(class.name());
 

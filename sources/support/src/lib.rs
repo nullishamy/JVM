@@ -2,6 +2,7 @@ pub mod bytes_ext;
 pub mod descriptor;
 pub mod encoding;
 pub mod types;
+pub mod jar;
 
 #[cfg(test)]
 mod tests {
@@ -118,6 +119,7 @@ mod tests {
 
         Ok(())
     }
+
     #[test]
     fn it_unparses_arraycopy_descriptors() -> Result<()> {
         let descriptor =
@@ -125,6 +127,37 @@ mod tests {
         let unparsed = descriptor.to_string();
 
         assert_eq!(unparsed, "(Ljava/lang/Object;ILjava/lang/Object;II)V");
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod jar_tests {
+    use std::io::{BufReader, Read};
+    use std::path::Path;
+    use std::fs::File;
+    use crate::jar::{JarFile};
+    use anyhow::Result;
+    
+
+    fn read_bytes(p: impl AsRef<Path>) -> Result<Vec<u8>> {
+        let f = File::open(p)?;
+        let mut reader = BufReader::new(f);
+        let mut buffer = Vec::with_capacity(1024 * 100);
+
+        // Read file into vector.
+        reader.read_to_end(&mut buffer)?;
+
+        Ok(buffer)
+    }
+
+    #[test]
+    fn it_opens_jars() -> Result<()> {
+        // PWD = src/support
+        let bytes = read_bytes("../../std.jar").unwrap();
+        let jar = JarFile::from_bytes(bytes).unwrap();
+        let jlc = jar.locate_class("java/lang/String.class");
 
         Ok(())
     }
