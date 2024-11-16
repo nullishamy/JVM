@@ -1,6 +1,6 @@
 mod common;
 use proc::java;
-use common::{make_vm, load_test, attach_utils, execute_test, iassert_eq, sassert_eq, assert_null, assert_not_null};
+use common::{make_vm, load_test, attach_utils, execute_test, iassert_eq, sassert_eq, assert_null, assert_not_null, as_i64};
 
 #[test]
 fn reference_arrays() {
@@ -427,6 +427,7 @@ fn static_members() {
 
     iassert_eq(12, captures.next());
 }
+
 #[test]
 fn instance_members() {
     let compiled = java!(r#"
@@ -466,4 +467,36 @@ fn instance_members() {
     assert_not_null(captures.next());
 
     iassert_eq(12, captures.next());
+}
+
+#[test]
+fn thread_sleep() {
+    let compiled = java!(r#"
+        public class ThreadSleep {
+            static native void capture(long l);
+
+            static void runTest() throws Exception {
+                capture(System.currentTimeMillis());
+                capture(System.currentTimeMillis());
+                Thread.sleep(1_000);
+                capture(System.currentTimeMillis());
+            }
+        }"#
+    );
+
+    let vm = make_vm();
+    let cls = load_test(&vm, compiled);
+    let capture_id = attach_utils(cls.clone());
+    let mut captures = execute_test(&vm, cls, capture_id);
+
+    let t1 = as_i64(captures.next());
+    let t2 = as_i64(captures.next());
+    let t3 = as_i64(captures.next());
+
+    // Try to confirm that we are recording time correctly
+    // There should be effectively no difference between subsequent calls (delta <= 1ms)
+    assert!(t2 - t1 <= 1);
+
+    // Should wait at least 900ms
+    assert!(t3 - t2 >= 900);
 }

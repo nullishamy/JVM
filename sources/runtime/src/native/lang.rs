@@ -1,4 +1,5 @@
 use std::{collections::HashMap, process::exit, time::SystemTime};
+use std::{thread, time::Duration};
 
 use support::{
     encoding::{decode_string, CompactEncoding},
@@ -211,6 +212,21 @@ impl NativeModule for LangSystem {
         }
 
         self.set_method(("nanoTime", "()J"), static_method!(nano_time));
+
+        fn current_time_millis(
+            _: RefTo<Class>,
+            _: Vec<RuntimeValue>,
+            _: &VM,
+        ) -> Result<Option<RuntimeValue>, Throwable> {
+            let duration_since_epoch = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap();
+            let timestamp_nanos = duration_since_epoch.as_millis() as u64 as i64;
+
+            Ok(Some(RuntimeValue::Integral(timestamp_nanos.into())))
+        }
+
+        self.set_method(("currentTimeMillis", "()J"), static_method!(current_time_millis));
 
         fn identity_hash_code(
             _: RefTo<Class>,
@@ -980,6 +996,23 @@ impl NativeModule for LangThread {
         }
 
         self.set_method(("registerNatives", "()V"), static_method!(register_natives));
+
+        fn sleep_j(
+            _: RefTo<Class>,
+            args: Vec<RuntimeValue>,
+            _: &VM,
+        ) -> Result<Option<RuntimeValue>, Throwable> {
+            let duration_millis = args.get(0).ok_or(internal!("no arg 0"))?;
+            let duration_millis = duration_millis
+                .as_integral()
+                .ok_or(internal!("not an integral"))?;
+
+            thread::sleep(Duration::from_millis(duration_millis.value as u64));
+
+            Ok(None)
+        }
+
+        self.set_method(("sleep", "(J)V"), static_method!(sleep_j));
 
         fn is_alive(
             _: RefTo<Object>,

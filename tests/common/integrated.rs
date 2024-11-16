@@ -151,6 +151,7 @@ impl NativeModule for TestCaptures {
 
         self.set_method(("capture", "(D)V"), static_method!(capture));
         self.set_method(("capture", "(I)V"), static_method!(capture));
+        self.set_method(("capture", "(J)V"), static_method!(capture));
         self.set_method(("capture", "(Ljava/lang/String;)V"), static_method!(capture));
         self.set_method(("capture", "(Ljava/lang/Object;)V"), static_method!(capture));
     }
@@ -256,6 +257,11 @@ pub fn sassert_eq(lhs: impl Into<String>, rhs: RuntimeValue) {
     let str_val = str.unwrap_ref().string().expect("could not decode string");
 
     assert_eq!(lhs.into(), str_val);
+}
+
+#[track_caller]
+pub fn as_i64(value: RuntimeValue) -> i64 {
+    value.as_integral().expect("not an integral").value as i64
 }
 
 
